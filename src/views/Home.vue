@@ -1,5 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { ref,getCurrentInstance,onMounted } from 'vue';
+
+const { proxy } = getCurrentInstance();
 
 const getImgUrl = (user) => {
     return new URL(`../assets/images/${user}.png`, import.meta.url).href;
@@ -35,6 +37,16 @@ const tableLable = ref({
 const toggleStatus = (row) => {
     row.status = row.status === '已完成' ? '未完成' : '已完成';
 };
+
+const getTableData =async () =>{
+    const data = await proxy.$api.getTableData()
+    // console.log(data)
+    tableData.value = data.plans
+}
+
+onMounted(() =>{
+    getTableData()
+})
 
 </script>
 
