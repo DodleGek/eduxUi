@@ -1,222 +1,170 @@
 <script setup>
-import { ref,getCurrentInstance,onMounted } from 'vue';
+import { ref, onMounted, reactive } from 'vue';
+import { getPlans, updatePlanStatus, getDashboardStats } from '@/api/home';
+import PieChart from '@/components/home/PieChart.vue';
+import UserInfoCard from '@/components/home/UserInfoCard.vue';
+import DailyPlanTable from '@/components/home/DailyPlanTable.vue';
+import NoticeList from '@/components/home/NoticeList.vue';
+import NoticeDetailDialog from '@/components/home/NoticeDetailDialog.vue';
 
-const { proxy } = getCurrentInstance();
+// 用户信息数据
+const loginTime = ref('2025-04-09 17:45:22');
+const loginIp = ref('192.168.1.100');
+const userData = {
+    username: 'admin',
+    role: '超级管理员',
+    avatar: 'user'
+};
 
-const getImgUrl = (user) => {
-    return new URL(`../assets/images/${user}.png`, import.meta.url).href;
-}
-
-// 修改为计划表数据
+// 计划表数据
 const tableData = ref([
     {
-        name: '学习Vue3基础知识',
-        time: '09:00-10:30',
-        status: '已完成'
-    },
-    {
-        name: '完成项目页面设计',
-        time: '13:00-15:00',
-        status: '未完成'
-    },
-    {
-        name: '阅读技术文档',
-        time: '16:00-17:30',
+        name: '加载中...',
+        time: '...',
         status: '未完成'
     }
 ]);
 
-// 修改表头名称
+// 公告数据
+const notices = ref([]);
+
+// 课程技术分布数据
+const courseStats = reactive({
+    categories: [],
+    values: []
+});
+
+// 表头名称
 const tableLable = ref({
     name: '计划内容',
     time: '计划时间',
     status: '完成状态'
 });
 
-// 修改切换计划完成状态的方法，在字符串状态间切换
-const toggleStatus = (row) => {
-    row.status = row.status === '已完成' ? '未完成' : '已完成';
+// 切换计划完成状态
+const handleUpdateStatus = async (row) => {
+    const newStatus = row.status === '已完成' ? '未完成' : '已完成';
+    try {
+        // 先更新UI
+        row.status = newStatus;
+        // 然后调用API更新后端
+        if (row.id) {
+            await updatePlanStatus(row.id, newStatus);
+        }
+    } catch (error) {
+        console.error('更新计划状态失败:', error);
+        // 如果API调用失败，恢复原状态
+        row.status = row.status === '已完成' ? '未完成' : '已完成';
+    }
 };
 
-const getTableData =async () =>{
-    const data = await proxy.$api.getTableData()
-    // console.log(data)
-    tableData.value = data.plans
-}
+// 添加新计划
+const handleAddPlan = () => {
+    // 实现添加计划的逻辑
+    console.log('添加新计划');
+    // 这里可以打开一个表单弹窗
+};
 
-onMounted(() =>{
-    getTableData()
-})
+// 获取表格数据
+const getTableData = async () => {
+    try {
+        const response = await getPlans();
+        if (response && response.plans) {
+            tableData.value = response.plans;
+        }
+    } catch (error) {
+        console.error('获取计划数据失败:', error);
+    }
+};
 
+// 获取统计数据和通知
+const getStatisticsData = async () => {
+    try {
+        const response = await getDashboardStats();
+        if (response) {
+            // 填充公告数据
+            if (response.notices) {
+                notices.value = response.notices;
+            }
+
+            // 填充课程技术分布数据
+            if (response.courseStats) {
+                courseStats.categories = response.courseStats.categories;
+                courseStats.values = response.courseStats.values;
+            }
+        }
+    } catch (error) {
+        console.error('获取统计数据失败:', error);
+    }
+};
+
+// 查看全部公告
+const handleViewAllNotices = () => {
+    console.log('查看全部公告');
+    // 实现查看全部公告的逻辑，如导航到公告页面
+};
+
+// 处理公告详情
+const currentNotice = ref(null);
+const showNoticeDialog = ref(false);
+
+const handleViewNoticeDetail = (notice) => {
+    currentNotice.value = notice;
+    showNoticeDialog.value = true;
+};
+
+onMounted(() => {
+    getTableData();
+    getStatisticsData();
+});
 </script>
 
 <template>
     <el-row class="home" :gutter="20">
+        <!-- 左侧 - 用户信息和计划表 -->
         <el-col :span="8" style="margin-top: 20px;">
-            <el-card shadow="hover">
-                <div class="user">
-                    <img :src="getImgUrl('user')" class="user" />
-                    <div class="user-info">
-                        <p class="user-info-admin">admin</p>
-                        <p class="user-info-p">超级管理员</p>
-                    </div>
-                </div>
-                <div class="login-info">
-                    <p>登录时间:<span>{{ loginTime }}</span></p>
-                    <p>登录IP:<span>{{ loginIp }}</span></p>
-                </div>
-            </el-card>
+            <UserInfoCard :username="userData.username" :role="userData.role" :avatar="userData.avatar"
+                :login-time="loginTime" :login-ip="loginIp" />
 
-            <el-card shadow="hover" class="user-table">
-                <div class="card-header">
-                    <span>我的每日计划</span>
-                    <el-button type="primary" size="small">添加计划</el-button>
-                </div>
-                <el-table :data="tableData" style="width: 100%">
-                    <el-table-column v-for="(val, key) in tableLable" :key="key" :prop="key" :label="val"
-                        v-if="key !== 'status'">
-                    </el-table-column>
-
-                    <el-table-column width="80">
-                        <template #default="scope">
-                            <div class="checkbox-wrapper" @click="toggleStatus(scope.row)">
-                                <div class="custom-checkbox" :class="{ 'is-checked': scope.row.status === '已完成' }">
-                                    <el-icon v-if="scope.row.status === '已完成'">
-                                        <Check />
-                                    </el-icon>
-                                </div>
-                            </div>
-                        </template>
-                    </el-table-column>
-                </el-table>
-            </el-card>
+            <DailyPlanTable :plans="tableData" :columns="tableLable" @update-status="handleUpdateStatus"
+                @add-plan="handleAddPlan" />
         </el-col>
 
-    </el-row>
-</template>
+        <!-- 右上侧 - 最新公告 -->
+        <el-col :span="16" style="margin-top: 20px;">
+            <NoticeList :notices="notices" @view-detail="handleViewNoticeDetail" @view-all="handleViewAllNotices" />
 
+            <!-- 右下侧 - 课程技术分布饼图 -->
+            <el-card shadow="hover" style="margin-top: 20px; height: 340px;">
+                <div class="card-header">
+                    <span>课程技术分布</span>
+                </div>
+                <PieChart chartId="courseChart" :categories="courseStats.categories" :values="courseStats.values"
+                    title="课程技术分布" seriesName="课程数量" height="280px" />
+            </el-card>
+        </el-col>
+    </el-row>
+
+    <!-- 公告详情弹窗 -->
+    <NoticeDetailDialog v-model="showNoticeDialog" :notice="currentNotice" />
+</template>
 
 <style scoped lang="less">
 .home {
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
 
-    .user {
+    .card-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        border-bottom: 1px solid #ccc;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
 
-        img {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            margin-right: 40px;
-        }
-
-        .user-info {
-            p {
-                line-height: 40px;
-            }
-
-            .user-info-p {
-                color: #999;
-            }
-
-            .user-info-admin {
-                font-size: 35px;
-            }
+        span {
+            font-size: 16px;
+            font-weight: bold;
         }
     }
-
-    .login-info {
-        p {
-            line-height: 30px;
-            font-size: 14px;
-            color: #999;
-
-            span {
-                color: #666;
-                margin-left: 60px
-            }
-        }
-    }
-
-    .user-table {
-        margin-top: 20px;
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-
-            span {
-                font-size: 16px;
-                font-weight: bold;
-            }
-        }
-
-        // 仅修改样式部分，不改变模板结构
-        .checkbox-wrapper {
-            display: flex;
-            justify-content: center;
-            cursor: pointer;
-
-            .custom-checkbox {
-                width: 10px;  // 从20px改为10px
-                height: 10px; // 从20px改为10px
-                border: 1px solid #dcdfe6;
-                border-radius: 2px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s;
-
-                &.is-checked {
-                    background-color: #67c23a;
-                    border-color: #67c23a;
-                    color: white;
-                }
-
-                .el-icon {
-                    font-size: 8px;  // 从14px改为8px
-                    transform: scale(0.8);  // 缩小图标比例
-                }
-            }
-        }
-    }
-
-    // 添加样式确保表格列的宽度比例合适
-    :deep(.el-table) {
-        .el-table__header {
-            th:first-child {
-                width: 65% !important;  // 第一列宽度65%
-            }
-            
-            th:nth-child(2) {
-                width: 25% !important;  // 第二列宽度25%
-            }
-            
-            th:last-child {
-                width: 10% !important;  // 第三列(勾选列)宽度10%
-            }
-        }
-        
-        .el-table__body {
-            td:first-child {
-                width: 65% !important;
-            }
-            
-            td:nth-child(2) {
-                width: 25% !important;
-            }
-            
-            td:last-child {
-                width: 10% !important;
-            }
-        }
-    }
-
 }
 </style>
