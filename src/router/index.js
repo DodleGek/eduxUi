@@ -47,6 +47,27 @@ const routes = [
                     icon: 'document',
                     parentTitle: '课程管理'
                 }
+            },
+            // 媒资管理相关路由
+            {
+                path: '/media/list',
+                name: 'mediaList',
+                component: () => import('@/views/media/MediaList.vue'),
+                meta: {
+                    title: '媒资列表',
+                    icon: 'picture',
+                    parentTitle: '媒资管理'
+                }
+            },
+            {
+                path: '/media/upload',
+                name: 'upload',
+                component: () => import('@/views/media/MediaUpload.vue'), // 修改这里，使用MediaUpload而不是Upload
+                meta: {
+                    title: '媒资上传',
+                    icon: 'upload',
+                    parentTitle: '媒资管理'
+                }
             }
         ]
     }

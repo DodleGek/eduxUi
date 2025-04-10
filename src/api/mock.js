@@ -6,6 +6,7 @@ console.log('开始加载Mock数据...');
 import './mock/homeMock.js'
 // 然后加载course模块mock数据
 import './mock/courseMock.js'
-// 可以在这里继续导入其他模块的Mock...
+// 接着加载media模块mock数据
+import './mock/mediaMock.js'
 
 console.log('所有Mock数据已加载');

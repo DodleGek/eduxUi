@@ -87,21 +87,28 @@ const list = ref([
     url: "Course",
   },
   {
-    path: "/media",
-    name: "media",
-    lable: "媒资管理",
-    icon: "video-camera",
-    children: [
-      {
-        path: "/media/upload",
-        name: "upload",
-        lable: "上传",
-        icon: "video-camera",
-        url: "Upload",
-      },
-    ],
-    url: "Media",
-  },
+  path: "/media",
+  name: "media",
+  lable: "媒资管理",
+  icon: "video-camera",
+  children: [
+    {
+      path: "/media/list",
+      name: "mediaList",
+      lable: "媒资列表",
+      icon: "picture",
+      url: "MediaList",
+    },
+    {
+      path: "/media/upload",
+      name: "upload",
+      lable: "媒资上传",
+      icon: "upload",
+      url: "Upload",
+    }
+  ],
+  url: "Media",
+},
   {
     path: "/student",
     name: "student",
