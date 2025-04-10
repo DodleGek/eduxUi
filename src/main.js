@@ -7,7 +7,7 @@ import { createPinia } from 'pinia'
 
 // TODO :引入mock数据 - 开发环境使用
 // 如果不需要mock数据，注释掉这一行即可
-import '@/api/mock/homeMock' 
+import '@/api/mock.js' 
 
 const pinia = createPinia() // 创建pinia实例
 
